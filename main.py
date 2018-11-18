@@ -1,56 +1,91 @@
-# importamos os modulos necessarios
-import pygame
+# KidsCanCode - Game Development with Pygame video series
+# Tile-based game - Part 6
+# Rotating Player Sprite
+# Video link: https://youtu.be/5M_-cJP5rk8
+import pygame as pg
+import sys
+from os import path
+from settings import *
+from sprites import *
+from tilemap import *
 
-pygame.init() # iniciamos o modulo pygame
+class Game:
+    def __init__(self):
+        pg.init()
+        self.screen = pg.display.set_mode((WIDTH, HEIGHT))
+        pg.display.set_caption(TITLE)
+        self.clock = pg.time.Clock()
+        self.load_data()
 
-width = 500
-height = 500
+    def load_data(self):
+        game_folder = path.dirname(__file__)
+        img_folder = path.join(game_folder, 'img')
+        self.map = Map(path.join(game_folder, 'map3.txt'))
+        self.player_img = pg.image.load(path.join(img_folder, PLAYER_IMG)).convert_alpha()
 
-win = pygame.display.set_mode((width, height)) #criando janela
+    def new(self):
+        # initialize all variables and do all the setup for a new game
+        self.all_sprites = pg.sprite.Group()
+        self.walls = pg.sprite.Group()
+        for row, tiles in enumerate(self.map.data):
+            for col, tile in enumerate(tiles):
+                if tile == '1':
+                    Wall(self, col, row)
+                if tile == 'P':
+                    self.player = Player(self, col, row)
+        self.camera = Camera(self.map.width, self.map.height)
 
-pygame.display.set_caption("Bunker Exile") #nomeando o jogo
+    def run(self):
+        # game loop - set self.playing = False to end the game
+        self.playing = True
+        while self.playing:
+            self.dt = self.clock.tick(FPS) / 1000.0
+            self.events()
+            self.update()
+            self.draw()
 
-#dimencoes do futuro personagem
-x = 50
-y = 40
-widthFigure = 32
-heightFigure = 64
-vel = 5
+    def quit(self):
+        pg.quit()
+        sys.exit()
 
-screenWidth = width - widthFigure - vel
-screenHeigth = height - heightFigure - vel 
+    def update(self):
+        # update portion of the game loop
+        self.all_sprites.update()
+        self.camera.update(self.player)
 
-isJump = False
-jumpCount = 10
+    def draw_grid(self):
+        for x in range(0, WIDTH, TILESIZE):
+            pg.draw.line(self.screen, LIGHTGREY, (x, 0), (x, HEIGHT))
+        for y in range(0, HEIGHT, TILESIZE):
+            pg.draw.line(self.screen, LIGHTGREY, (0, y), (WIDTH, y))
 
+    def draw(self):
+        self.screen.fill(BGCOLOR)
+        self.draw_grid()
+        for sprite in self.all_sprites:
+            self.screen.blit(sprite.image, self.camera.apply(sprite))
+        # pg.draw.rect(self.screen, WHITE, self.player.hit_rect, 2)
+        pg.display.flip()
 
+    def events(self):
+        # catch all events here
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                self.quit()
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    self.quit()
 
-run = True
+    def show_start_screen(self):
+        pass
 
-#loop do jogo
-while run:
-    pygame.time.delay(16)
+    def show_go_screen(self):
+        pass
 
-    for event in pygame.event.get():
-        if event.type ==  pygame.QUIT:
-            run = False
-
-    keys =  pygame.key.get_pressed()
-
-    if keys[pygame.K_LEFT] and x > vel:
-        x -= vel
-    if keys[pygame.K_RIGHT] and x < screenWidth:
-        x += vel
-    if keys[pygame.K_UP] and y > vel:
-        y -= vel
-    if keys[pygame.K_DOWN] and y < screenWidth:
-        y += vel
-    if keys[pygame.K_SPACE]:
-        isJump = True
-        
-
-    win.fill((0, 0, 0,))
-    pygame.draw.rect(win, (255, 0, 0), (x, y, widthFigure, heightFigure)) #chama o futuro jogador
-    pygame.display.update() #atualiza o jogo
-
-pygame.quit()
+# create the game object
+g = Game()
+g.show_start_screen()
+while True:
+    g.new()
+    g.run()
+    g.show_go_screen()
